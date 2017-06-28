@@ -39,6 +39,14 @@ class foo7:
         print(1)
     else:
         print(0)
+
+class foo8:
+    def __init__(self):
+        pass
+
+    @prop
+    def _func_bar():
+        pass
 '''
 
 # TODO: Add tests and probably code for
