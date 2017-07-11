@@ -3,9 +3,34 @@
 from __future__ import print_function
 
 import ast
+import sys
+
+
+TRAVERSABLE_FIELDS = {
+        ast.ClassDef: ('decorator_list', 'body', ),
+        ast.ExceptHandler: ('body',),
+        ast.For: ('body', 'orelse'),
+        ast.FunctionDef: ('decorator_list', 'body',),
+        ast.If: ('body', 'orelse'),
+        ast.Module: ('body',),
+        ast.While: ('body', 'orelse'),
+        ast.With: ('body',),
+}
+if sys.version_info < (3, 0):
+    TRAVERSABLE_FIELDS.update({
+        ast.TryExcept: ('body', 'handlers', 'orelse'),
+        ast.TryFinally: ('body', 'finalbody'),
+    })
+else:
+    TRAVERSABLE_FIELDS.update({
+        ast.Try: ('body', 'handlers', 'orelse', 'finalbody')
+    })
+
 
 source = '''\
+# All test cases pass
 import things
+
 class foo1:
     #There are comments
     print("hello")
@@ -18,12 +43,13 @@ class foo3:
     with open('test') as f:
         pass
 
-# This test case fails.
 class foo4:
     try:
         foo()
     except:
         pass
+    else:
+        foobar()
 
 class foo5:
     def bar():
@@ -33,7 +59,6 @@ class foo6:
     class test:
         pass
 
-# This test case fails.
 class foo7:
     if True:
         print(1)
@@ -47,28 +72,33 @@ class foo8:
     @prop
     def _func_bar():
         pass
+
+class foo9:
+    try:
+        foo()
+    except:
+        bar()
 '''
 
 # TODO: Add tests and probably code for
 # AsyncFunctionDef, AsyncWith, AsyncFor
+ENTRY_POINTS = ast.ClassDef, ast.FunctionDef
 
 tree = ast.parse(source)
 for entry in tree.body:
-    if isinstance(entry, (ast.ClassDef, ast.FunctionDef)):
+    if isinstance(entry, ENTRY_POINTS):
         print('Body', entry.body)
         last_body = entry.body[-1]
-        while isinstance(last_body, (ast.ClassDef, ast.For, ast.FunctionDef, ast.If, ast.While, ast.With)):
-            print('Available fields:', dir(last_body))
+        while isinstance(last_body, tuple(TRAVERSABLE_FIELDS.keys())):
+            fields = TRAVERSABLE_FIELDS.get(last_body.__class__, ())
+            print('Available fields:', fields)
             print('Body', last_body.body)
-            # TODO: For some ast node types this is too simple. For
-            # example for try-except, we will have to
-            # check for ast.Try.finalbody, ast.Try.orelse and
-            # ast.Try.handlers sequentially and move to the first defined
-            # attribute among these.
-            # Similarly for if-else. For Python 2 there is no ast.Try,
-            # but only ast.TryExcept and ast.TryFinally. The code here
-            # only works for ast nodes that only have one child "body".
-            last_body = last_body.body[-1]
+            for field in reversed(fields):
+                child = getattr(last_body, field)
+                if child != []:
+                    break
+            print("Child:", child)
+            last_body = child[-1]
 
         last_line = last_body.lineno
         print("Name: ", entry.name)
