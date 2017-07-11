@@ -78,6 +78,19 @@ class foo9:
         foo()
     except:
         bar()
+
+class foo10:
+    for x in [1]:
+        print(x)
+    else:
+        print("Foo")
+
+class foo11:
+    x = [1]
+    while x:
+        x.pop
+    else:
+        print("Foo")
 '''
 
 # TODO: Add tests and probably code for
