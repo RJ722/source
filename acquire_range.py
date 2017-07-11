@@ -26,24 +26,26 @@ else:
         ast.Try: ('body', 'handlers', 'orelse', 'finalbody')
     })
 
+ENTRY_POINTS = (ast.ClassDef, ast.FunctionDef)
+
 
 source = '''\
 # All test cases pass
 import things
 
-class foo1:
+class Foo:
     #There are comments
     print("hello")
 
-class foo2:
+class Foo:
     if False:
         pass
 
-class foo3:
+class Foo:
     with open('test') as f:
         pass
 
-class foo4:
+class Foo:
     try:
         foo()
     except:
@@ -51,21 +53,21 @@ class foo4:
     else:
         foobar()
 
-class foo5:
+class Foo:
     def bar():
         pass
 
-class foo6:
+class Foo:
     class test:
         pass
 
-class foo7:
+class Foo:
     if True:
         print(1)
     else:
         print(0)
 
-class foo8:
+class Foo:
     def __init__(self):
         pass
 
@@ -73,19 +75,19 @@ class foo8:
     def _func_bar():
         pass
 
-class foo9:
+class Foo:
     try:
         foo()
     except:
         bar()
 
-class foo10:
+class Foo:
     for x in [1]:
         print(x)
     else:
         print("Foo")
 
-class foo11:
+class Foo:
     x = [1]
     while x:
         x.pop
@@ -95,7 +97,6 @@ class foo11:
 
 # TODO: Add tests and probably code for
 # AsyncFunctionDef, AsyncWith, AsyncFor
-ENTRY_POINTS = ast.ClassDef, ast.FunctionDef
 
 tree = ast.parse(source)
 for entry in tree.body:
@@ -103,15 +104,15 @@ for entry in tree.body:
         print('Body', entry.body)
         last_body = entry.body[-1]
         while isinstance(last_body, tuple(TRAVERSABLE_FIELDS.keys())):
-            fields = TRAVERSABLE_FIELDS.get(last_body.__class__, ())
+            fields = TRAVERSABLE_FIELDS[last_body.__class__]
             print('Available fields:', fields)
             print('Body', last_body.body)
             for field in reversed(fields):
-                child = getattr(last_body, field)
-                if child != []:
+                children = getattr(last_body, field)
+                if children:
                     break
-            print("Child:", child)
-            last_body = child[-1]
+            print("Children:", children)
+            last_body = children[-1] # The last child
 
         last_line = last_body.lineno
         print("Name: ", entry.name)
